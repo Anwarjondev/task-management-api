@@ -7,9 +7,9 @@ import (
 
 type Subtask struct {
 	ID         string `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()" json:"id"`
-	Title      string `gorm:"type:varchar(255)" json:"title"`
-	Status     string `gorm:"type:varchar(50)" json:"status"`
-	TaskID     string `gorm:"type uuid" json:"task_id"`
+	Title      string `gorm:"type:varchar(255)" json:"title" validate:"required,min=3, max=100"`
+	Status     string `gorm:"type:varchar(50)" json:"status" validate:"required, oneof=pending, in_progress completed"`
+	TaskID     string `gorm:"type uuid" json:"task_id" validate:"required"`
 	Task       Task   `gorm:"foreignKey:TaskID" json:"task"`
 	AssigneeID string `gorm:"type:uuid" json:"assignee_id"`
 	Assignee   User   `gorm:"foreignKey:AssigneeID" json:"assignee"`

@@ -7,10 +7,10 @@ import (
 
 type Task struct {
 	ID          string    `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()" json:"id"`
-	Title       string    `gorm:"type:varchar(255)" json:"title"`
-	Description string    `gorm:"type:text" json:"description"`
-	Status      string    `gorm:"type:varchar(50)" json:"status"`
-	ProjectID   string    `gorm:"type:uuid" json:"project_id"`
+	Title       string    `gorm:"type:varchar(255)" json:"title" validate:"required, min=3, max=100"`
+	Description string    `gorm:"type:text" json:"description" validate:"max=500"`
+	Status      string    `gorm:"type:varchar(50)" json:"status" validate:"required,oneof=pending in_progress completed"`
+	ProjectID   string    `gorm:"type:uuid" json:"project_id" validate:"required"`
 	Project     Project   `gorm:"foreignKey:ProjectID" json:"project"`
 	AssigneeID  string    `gorm:"type:uuid" json:"assignee_id"`
 	Assignee    User      `gorm:"foreignKey:AssigneeID" json:"assignee"`

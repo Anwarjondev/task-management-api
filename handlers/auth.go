@@ -8,10 +8,17 @@ import (
 	"github.com/Anwarjondev/task-management-api/db"
 	"github.com/Anwarjondev/task-management-api/middleware"
 	"github.com/Anwarjondev/task-management-api/models"
+	"github.com/Anwarjondev/task-management-api/utils"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
+var validate *validator.Validate
+
+func init() {
+	validate = validator.New()
+}
 
 // Register a new user
 // @Summary Register a new user
@@ -27,7 +34,12 @@ import (
 func Register(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	err := validate.Struct(&user)
+	if err != nil {
+		utils.SendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	if user.Role == "" {
@@ -35,12 +47,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 	hashedpassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Error with encrypting password", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	user.Password = string(hashedpassword)
 	if err = db.DB.Create(&user).Error; err != nil {
-		http.Error(w, "Error: User already exist", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -63,16 +75,20 @@ func Register(w http.ResponseWriter, r *http.Request) {
 func Login(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, err.Error())
 		return
+	}
+	err := validate.Struct(&user)
+	if err != nil {
+		utils.SendError(w, http.StatusBadRequest, err.Error())
 	}
 	var dbUser models.User
 	if err := db.DB.Where("username = ?", user.Username).First(&dbUser).Error; err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		utils.SendError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dbUser.Password)); err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		utils.SendError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 	expirationTime := time.Now().Add(30 * time.Minute)
@@ -86,7 +102,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(middleware.JwtKey)
 	if err != nil {
-		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
