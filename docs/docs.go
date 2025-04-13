@@ -61,6 +61,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/users/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a user (admin only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/createproject": {
             "post": {
                 "security": [
@@ -572,6 +630,255 @@ const docTemplate = `{
                 }
             }
         },
+        "/subtasks": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get subtasks accessible to the user with pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subtasks"
+                ],
+                "summary": "List subtasks",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by task ID",
+                        "name": "task_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Subtask"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a subtask under a task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subtasks"
+                ],
+                "summary": "Create a subtask",
+                "parameters": [
+                    {
+                        "description": "Subtask data",
+                        "name": "subtask",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Subtask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Subtask"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subtasks/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update a subtask if the user is the creator, assignee, or admin",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subtasks"
+                ],
+                "summary": "Update a subtask",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Subtask پردی ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated subtask data",
+                        "name": "subtask",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Subtask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Subtask"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a subtask if the user is the creator or admin",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subtasks"
+                ],
+                "summary": "Delete a subtask",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Subtask ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/{id}": {
             "put": {
                 "security": [
@@ -758,6 +1065,12 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -766,9 +1079,13 @@ const docTemplate = `{
     "definitions": {
         "models.Project": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                 },
                 "id": {
                     "type": "string"
@@ -780,7 +1097,9 @@ const docTemplate = `{
                     }
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 10,
+                    "minLength": 3
                 },
                 "owner": {
                     "$ref": "#/definitions/models.User"
@@ -798,6 +1117,11 @@ const docTemplate = `{
         },
         "models.Subtask": {
             "type": "object",
+            "required": [
+                "status",
+                "task_id",
+                "title"
+            ],
             "properties": {
                 "assignee": {
                     "$ref": "#/definitions/models.User"
@@ -824,12 +1148,18 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 3
                 }
             }
         },
         "models.Task": {
             "type": "object",
+            "required": [
+                "project_id",
+                "status",
+                "title"
+            ],
             "properties": {
                 "assignee": {
                     "$ref": "#/definitions/models.User"
@@ -844,7 +1174,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                 },
                 "id": {
                     "type": "string"
@@ -856,7 +1187,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "in_progress",
+                        "completed"
+                    ]
                 },
                 "subtasks": {
                     "type": "array",
@@ -871,12 +1207,18 @@ const docTemplate = `{
         },
         "models.User": {
             "type": "object",
+            "required": [
+                "password",
+                "role",
+                "username"
+            ],
             "properties": {
                 "id": {
                     "type": "string"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 6
                 },
                 "projects": {
                     "type": "array",
@@ -885,10 +1227,28 @@ const docTemplate = `{
                     }
                 },
                 "role": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "manager",
+                        "team_member"
+                    ]
                 },
                 "username": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3
+                }
+            }
+        },
+        "utils.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
                     "type": "string"
+                },
+                "status": {
+                    "type": "integer"
                 }
             }
         }

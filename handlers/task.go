@@ -7,6 +7,7 @@ import (
 
 	"github.com/Anwarjondev/task-management-api/db"
 	"github.com/Anwarjondev/task-management-api/models"
+	"github.com/Anwarjondev/task-management-api/utils"
 )
 
 // CreateTask creates a new task
@@ -27,14 +28,19 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "Invalid request: "+err.Error())
+		return
+	}
+	err = validate.Struct(&task)
+	if err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Invalid request: "+err.Error())
 		return
 	}
 	task.CreatorID = userID
 	task.Status = "pending"
 	err = db.DB.Create(&task).Error
 	if err != nil {
-		http.Error(w, "Error with creating task", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "Error with creating task: "+err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -75,9 +81,17 @@ func GetTask(w http.ResponseWriter, r *http.Request) {
 		query = query.Where("status = ?", status)
 	}
 	if role == "admin" {
-		query.Find(&tasks)
+		err := query.Find(&tasks).Error
+		if err != nil {
+			utils.SendError(w, http.StatusInternalServerError, "Error with fetch task: "+err.Error())
+			return
+		}
 	} else {
-		query.Where("creator_id = ? or assignee_id = ?", userID, userID).Find(&tasks)
+		err := query.Where("creator_id = ? or assignee_id = ?", userID, userID).Find(&tasks).Error
+		if err != nil {
+			utils.SendError(w, http.StatusInternalServerError, "Error with fetch task: "+err.Error())
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tasks)
@@ -107,21 +121,31 @@ func Updatetask(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	err := db.DB.First(&task, "id = ?", id).Error
 	if err != nil {
-		http.Error(w, "task not found", http.StatusNotFound)
+		utils.SendError(w, http.StatusNotFound, "task not found: "+err.Error())
 		return
 	}
 	if task.AssigneeID != userID && task.CreatorID != userID && role != "admin" {
-		http.Error(w, "Forbidden", http.StatusForbidden)
+		utils.SendError(w, http.StatusForbidden, "Forbidden: "+err.Error())
 		return
 	}
-	err = json.NewDecoder(r.Body).Decode(&task)
+	var updateTask models.Task
+	err = json.NewDecoder(r.Body).Decode(&updateTask)
 	if err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "Invalid request: "+err.Error())
 		return
 	}
+	err = validate.Struct(&updateTask)
+	if err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Invalid request: "+err.Error())
+		return
+	}
+	task.Title = updateTask.Title
+	task.Description = updateTask.Description
+	task.Status = updateTask.Status
+	task.AssigneeID = updateTask.AssigneeID
 	err = db.DB.Save(&task).Error
 	if err != nil {
-		http.Error(w, "Error with supdating task", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "Error with supdating task: "+err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -141,23 +165,23 @@ func Updatetask(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "Not found"
 // @Router /tasks/{id} [delete]
 func DeleteTask(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id")
-	role := r.Context().Value("role")
+	userID := r.Context().Value("user_id").(string)
+	role := r.Context().Value("role").(string)
 	id := r.URL.Path[len("/deletetask/"):]
 
 	var task models.Task
 	err := db.DB.First(&task, "id = ?", id).Error
 	if err != nil {
-		http.Error(w, "task not found", http.StatusNotFound)
+		utils.SendError(w, http.StatusNotFound, "task not found: "+err.Error())
 		return
 	}
 	if task.CreatorID != userID && role != "admin" {
-		http.Error(w, "Forbidden", http.StatusForbidden)
+		utils.SendError(w, http.StatusForbidden, "Forbidden: "+err.Error())
 		return
 	}
 	err = db.DB.Delete(&task).Error 
 	if err != nil {
-		http.Error(w, "Error deleting task", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "Error deleting task: "+err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

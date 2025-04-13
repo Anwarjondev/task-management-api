@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Anwarjondev/task-management-api/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 )
@@ -31,7 +32,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "Unauthorized: Missing token", http.StatusUnauthorized)
+			utils.SendError(w, http.StatusUnauthorized, "Unauthorized: Missing token")
 			return
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
@@ -40,11 +41,11 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return JwtKey, nil
 		}) 
 		if err != nil || !token.Valid {
-			http.Error(w, "Unathorized: Invalid token", http.StatusUnauthorized)
+			utils.SendError(w, http.StatusUnauthorized, "Unathorized: "+err.Error())
 			return
 		}
 		if claims.UserID == "" {
-			http.Error(w, "Unathorized: Missing user id", http.StatusUnauthorized)
+			utils.SendError(w, http.StatusUnauthorized, "Unathorized: Missing user id")
 			return
 		}
 		ctx := context.WithValue(r.Context(), "user_id", claims.UserID)

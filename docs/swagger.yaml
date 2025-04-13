@@ -2,6 +2,7 @@ definitions:
   models.Project:
     properties:
       description:
+        maxLength: 500
         type: string
       id:
         type: string
@@ -10,6 +11,8 @@ definitions:
           $ref: '#/definitions/models.User'
         type: array
       name:
+        maxLength: 10
+        minLength: 3
         type: string
       owner:
         $ref: '#/definitions/models.User'
@@ -19,6 +22,8 @@ definitions:
         items:
           $ref: '#/definitions/models.Task'
         type: array
+    required:
+    - name
     type: object
   models.Subtask:
     properties:
@@ -39,7 +44,12 @@ definitions:
       task_id:
         type: string
       title:
+        minLength: 3
         type: string
+    required:
+    - status
+    - task_id
+    - title
     type: object
   models.Task:
     properties:
@@ -52,6 +62,7 @@ definitions:
       creator_id:
         type: string
       description:
+        maxLength: 500
         type: string
       id:
         type: string
@@ -60,6 +71,10 @@ definitions:
       project_id:
         type: string
       status:
+        enum:
+        - pending
+        - in_progress
+        - completed
         type: string
       subtasks:
         items:
@@ -67,21 +82,43 @@ definitions:
         type: array
       title:
         type: string
+    required:
+    - project_id
+    - status
+    - title
     type: object
   models.User:
     properties:
       id:
         type: string
       password:
+        minLength: 6
         type: string
       projects:
         items:
           $ref: '#/definitions/models.Project'
         type: array
       role:
+        enum:
+        - admin
+        - manager
+        - team_member
         type: string
       username:
+        maxLength: 50
+        minLength: 3
         type: string
+    required:
+    - password
+    - role
+    - username
+    type: object
+  utils.ErrorResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: integer
     type: object
 info:
   contact: {}
@@ -113,6 +150,43 @@ paths:
       security:
       - BearerAuth: []
       summary: List users
+      tags:
+      - Users
+  /admin/users/{id}:
+    delete:
+      description: Delete a user (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user
       tags:
       - Users
   /createproject:
@@ -443,6 +517,166 @@ paths:
       summary: Register a new user
       tags:
       - Authentication
+  /subtasks:
+    get:
+      description: Get subtasks accessible to the user with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Filter by task ID
+        in: query
+        name: task_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Subtask'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List subtasks
+      tags:
+      - Subtasks
+    post:
+      consumes:
+      - application/json
+      description: Create a subtask under a task
+      parameters:
+      - description: Subtask data
+        in: body
+        name: subtask
+        required: true
+        schema:
+          $ref: '#/definitions/models.Subtask'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Subtask'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a subtask
+      tags:
+      - Subtasks
+  /subtasks/{id}:
+    delete:
+      description: Delete a subtask if the user is the creator or admin
+      parameters:
+      - description: Subtask ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a subtask
+      tags:
+      - Subtasks
+    put:
+      consumes:
+      - application/json
+      description: Update a subtask if the user is the creator, assignee, or admin
+      parameters:
+      - description: Subtask پردی ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated subtask data
+        in: body
+        name: subtask
+        required: true
+        schema:
+          $ref: '#/definitions/models.Subtask'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Subtask'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a subtask
+      tags:
+      - Subtasks
   /tasks/{id}:
     delete:
       description: Delete a task if the user is the creator or admin
@@ -560,6 +794,10 @@ paths:
           description: Not found
           schema:
             type: string
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update user

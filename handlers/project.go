@@ -216,16 +216,21 @@ func AddProjectMember(w http.ResponseWriter, r *http.Request) {
 		utils.SendError(w, http.StatusBadRequest, "Invalid request: "+err.Error())
 		return
 	}
+	err  = validate.Struct(&input)
+	if err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Validation error: "+err.Error())
+		return
+	}
 	var user models.User
 	err = db.DB.First(&user, "id = ?", input.UserID).Error
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		utils.SendError(w, http.StatusNotFound, "User not found: "+err.Error())
 		return
 	}
 	project.Members = append(project.Members, user)
 	err = db.DB.Save(&project).Error
 	if err != nil {
-		http.Error(w, "Error adding members", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "Error adding members: "+err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
